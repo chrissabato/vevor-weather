@@ -50,6 +50,6 @@ $data = [
     'solar_radiation'  => $obs['solarRadiation'],
 ];
 
-$out = json_encode($data);
+$out = json_encode([$data]);
 file_put_contents(CACHE_FILE, $out);
 echo $out;
