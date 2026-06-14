@@ -199,7 +199,8 @@
   async function refresh() {
     try {
       const res = await fetch('weather.php');
-      const data = await res.json();
+      const json = await res.json();
+      const data = Array.isArray(json) ? json[0] : json;
       if (data.error) throw new Error(data.error);
       render(data);
     } catch (e) {
