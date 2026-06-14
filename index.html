@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weather Station</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0f1117;
+      color: #e8eaf0;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 2rem;
+    }
+
+    header h1 {
+      font-size: 1.1rem;
+      font-weight: 500;
+      color: #8891a8;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    #updated {
+      font-size: 0.8rem;
+      color: #555d72;
+    }
+
+    .hero {
+      display: flex;
+      align-items: flex-end;
+      gap: 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+
+    #temp {
+      font-size: 6rem;
+      font-weight: 200;
+      line-height: 1;
+      letter-spacing: -0.02em;
+    }
+
+    .hero-detail {
+      padding-bottom: 0.75rem;
+      color: #8891a8;
+      font-size: 0.95rem;
+      line-height: 1.8;
+    }
+
+    .hero-detail span {
+      color: #c8cdd8;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 1rem;
+    }
+
+    .card {
+      background: #181c27;
+      border: 1px solid #252a38;
+      border-radius: 10px;
+      padding: 1.1rem 1.25rem;
+    }
+
+    .card-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #555d72;
+      margin-bottom: 0.4rem;
+    }
+
+    .card-value {
+      font-size: 1.75rem;
+      font-weight: 300;
+      color: #e8eaf0;
+      line-height: 1;
+    }
+
+    .card-unit {
+      font-size: 0.85rem;
+      color: #8891a8;
+      margin-left: 0.2em;
+    }
+
+    .card-sub {
+      font-size: 0.8rem;
+      color: #555d72;
+      margin-top: 0.35rem;
+    }
+
+    .error {
+      background: #2a1820;
+      border: 1px solid #6b2d3a;
+      border-radius: 10px;
+      padding: 1rem 1.5rem;
+      color: #e07080;
+      font-size: 0.9rem;
+    }
+
+    #status-dot {
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #3a6b45;
+      margin-right: 0.4rem;
+      vertical-align: middle;
+    }
+    #status-dot.error { background: #6b2d3a; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1><span id="status-dot"></span><span id="station-name">Weather Station</span></h1>
+  <div id="updated">Loading…</div>
+</header>
+
+<div id="content"></div>
+
+<script>
+  const REFRESH_MS = 60_000;
+
+  function compassDir(deg) {
+    const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+    return dirs[Math.round(deg / 22.5) % 16];
+  }
+
+  function feelsLike(w) {
+    return w.temp_f >= 80 ? `${w.heat_index_f}°` : `${w.wind_chill_f}°`;
+  }
+
+  function render(w) {
+    document.getElementById('updated').textContent =
+      'Updated ' + new Date(w.time_utc).toLocaleTimeString();
+    document.getElementById('station-name').textContent =
+      `${w.station_id} — ${w.neighborhood}, ${w.country}`;
+    document.title = `Weather Station — ${w.station_id}`;
+    document.getElementById('status-dot').className = '';
+
+    document.getElementById('content').innerHTML = `
+      <div class="hero">
+        <div id="temp">${w.temp_f}<span style="font-size:2.5rem;color:#8891a8">°F</span></div>
+        <div class="hero-detail">
+          Feels like <span>${feelsLike(w)}</span><br>
+          Humidity <span>${w.humidity}%</span><br>
+          Dew point <span>${w.dew_point_f}°F</span>
+        </div>
+      </div>
+      <div class="grid">
+        <div class="card">
+          <div class="card-label">Wind</div>
+          <div class="card-value">${w.wind_speed_mph}<span class="card-unit">mph</span></div>
+          <div class="card-sub">${compassDir(w.wind_dir_deg)} &mdash; gusts ${w.wind_gust_mph} mph</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Pressure</div>
+          <div class="card-value">${w.pressure_inhg}<span class="card-unit">inHg</span></div>
+        </div>
+        <div class="card">
+          <div class="card-label">UV Index</div>
+          <div class="card-value">${w.uv_index}</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Solar Radiation</div>
+          <div class="card-value">${w.solar_radiation}<span class="card-unit">W/m²</span></div>
+        </div>
+        <div class="card">
+          <div class="card-label">Rain Rate</div>
+          <div class="card-value">${w.precip_rate_in}<span class="card-unit">in/hr</span></div>
+          <div class="card-sub">Today: ${w.precip_total_in} in</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Heat Index</div>
+          <div class="card-value">${w.heat_index_f}<span class="card-unit">°F</span></div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderError(msg) {
+    document.getElementById('status-dot').className = 'error';
+    document.getElementById('content').innerHTML =
+      `<div class="error">Could not load weather data: ${msg}</div>`;
+  }
+
+  async function refresh() {
+    try {
+      const res = await fetch('weather.php');
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      render(data);
+    } catch (e) {
+      renderError(e.message);
+    }
+  }
+
+  refresh();
+  setInterval(refresh, REFRESH_MS);
+</script>
+
+</body>
+</html>
