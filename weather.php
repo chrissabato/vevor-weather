@@ -8,21 +8,20 @@ define('CACHE_FILE', __DIR__ . '/weather_cache.json');
 define('CACHE_TTL',  300); // seconds — WU updates every ~5 min
 
 if (file_exists(CACHE_FILE) && (time() - filemtime(CACHE_FILE)) < CACHE_TTL) {
-    echo file_get_contents(CACHE_FILE);
-    exit;
-}
-
-$url = sprintf(
-    'https://api.weather.com/v2/pws/observations/current?stationId=%s&format=json&units=e&apiKey=%s',
-    STATION_ID,
-    API_KEY
-);
-
-$raw = @file_get_contents($url);
-if ($raw === false) {
-    http_response_code(503);
-    echo json_encode(['error' => 'Failed to fetch weather data']);
-    exit;
+    $raw = file_get_contents(CACHE_FILE);
+} else {
+    $url = sprintf(
+        'https://api.weather.com/v2/pws/observations/current?stationId=%s&format=json&units=e&apiKey=%s',
+        STATION_ID,
+        API_KEY
+    );
+    $raw = @file_get_contents($url);
+    if ($raw === false) {
+        http_response_code(503);
+        echo json_encode(['error' => 'Failed to fetch weather data']);
+        exit;
+    }
+    file_put_contents(CACHE_FILE, $raw);
 }
 
 $json = json_decode($raw, true);
@@ -49,6 +48,4 @@ $data = [
     'solar_radiation'  => $obs['solarRadiation'],
 ];
 
-$out = json_encode([$data]);
-file_put_contents(CACHE_FILE, $out);
-echo $out;
+echo json_encode([$data]);
