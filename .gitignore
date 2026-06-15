@@ -1,2 +1,3 @@
 config.php
 weather_cache.json
+history_cache.json

@@ -17,7 +17,7 @@
 
     body {
       display: grid;
-      grid-template-rows: auto 1fr;
+      grid-template-rows: auto 1fr 28vh;
     }
 
     header {
@@ -168,6 +168,34 @@
       color: #e07080;
       font-size: 0.9rem;
     }
+
+    #chart-section {
+      padding: 0 1.5rem 0.75rem;
+      min-height: 0;
+    }
+
+    #chart-wrap {
+      background: #181c27;
+      border: 1px solid #252a38;
+      border-radius: 12px;
+      padding: 0.75rem 1.25rem;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #chart-title {
+      font-size: clamp(0.65rem, 1vw, 0.85rem);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #555d72;
+      margin-bottom: 0.4rem;
+    }
+
+    #chart-wrap canvas {
+      flex: 1;
+      min-height: 0;
+    }
   </style>
 </head>
 <body>
@@ -179,6 +207,14 @@
 
 <main id="main"></main>
 
+<section id="chart-section">
+  <div id="chart-wrap">
+    <div id="chart-title">Temperature — Last 24 Hours</div>
+    <canvas id="temp-chart"></canvas>
+  </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <script>
   const REFRESH_MS = 60_000;
 
@@ -261,6 +297,62 @@
 
   refresh();
   setInterval(refresh, REFRESH_MS);
+
+  // --- temperature chart ---
+  const ctx = document.getElementById('temp-chart').getContext('2d');
+  const tempChart = new Chart(ctx, {
+    type: 'line',
+    data: { labels: [], datasets: [{
+      data: [],
+      borderColor: '#5b8dee',
+      backgroundColor: 'rgba(91,141,238,0.08)',
+      borderWidth: 2,
+      pointRadius: 3,
+      pointBackgroundColor: '#5b8dee',
+      fill: true,
+      tension: 0.3,
+    }]},
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => `${ctx.parsed.y}°F`
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#555d72', maxTicksLimit: 12, font: { size: 11 } },
+          grid: { color: '#1e2333' },
+        },
+        y: {
+          ticks: { color: '#555d72', callback: v => `${v}°`, font: { size: 11 } },
+          grid: { color: '#1e2333' },
+        }
+      }
+    }
+  });
+
+  async function refreshChart() {
+    try {
+      const res = await fetch('history.php');
+      const data = await res.json();
+      if (data.error || !Array.isArray(data)) return;
+      tempChart.data.labels = data.map(d => {
+        const t = new Date(d.time);
+        return t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+      });
+      tempChart.data.datasets[0].data = data.map(d => d.temp);
+      tempChart.update();
+    } catch(e) { /* silently fail — chart just won't update */ }
+  }
+
+  refreshChart();
+  setInterval(refreshChart, 10 * 60 * 1000); // every 10 min
 </script>
 
 </body>
