@@ -31,8 +31,7 @@ $imp  = $obs['imperial'];
 
 $data = [
     'station_id'       => $obs['stationID'],
-    'neighborhood'     => $obs['neighborhood'],
-    'country'          => $obs['country'],
+    'location'         => STATION_LOCATION,
     'time_utc'         => $obs['obsTimeUtc'],
     'time_local'       => $obs['obsTimeLocal'],
     'temp_f'           => $imp['temp'],

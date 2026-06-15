@@ -244,7 +244,7 @@
 
   function render(w) {
     document.getElementById('station-name').textContent =
-      `${w.station_id} — ${w.neighborhood}, ${w.country}`;
+      `${w.station_id} — ${w.location}`;
     document.title = `Weather — ${w.station_id}`;
     document.getElementById('updated').textContent =
       'Updated ' + new Date(w.time_utc).toLocaleTimeString();
